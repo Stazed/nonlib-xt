@@ -376,7 +376,7 @@ namespace OSC
         void wait ( int timeout ) const;
         void run ( void ) const;
 
-        void name ( const char *name ) { _name = strdup( name ); }
+        void name ( const char *name );
         const char *name ( void ) { return _name; }
 
         void hello ( const char *url );

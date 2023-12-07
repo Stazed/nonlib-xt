@@ -1394,6 +1394,17 @@ namespace OSC
             lo_server_recv( _server );
         }
     }
+    
+    void
+    Endpoint::name ( const char *name )
+    {
+        if (_name)
+        {
+            free(_name);
+            _name = 0;
+        }
+        _name = strdup( name );
+    }
 
     int
     Endpoint::send ( lo_address to, const char *path, std::list< OSC_Value > values )
