@@ -622,6 +622,7 @@ _Pragma("GCC diagnostic ignored \"-Wstringop-overflow=\"")
         strncpy( dir, name, strlen(name) - strlen(filename) );
 _Pragma("GCC diagnostic pop")
 
+        dir[(strlen(name) - strlen(filename))] = '\0';  // make sure to null terminate
         /* Create tmp file with '#' in front of the file name -
          to be later renamed if all goes well */
         asprintf( &tmp, "%s#%s", dir, filename );
