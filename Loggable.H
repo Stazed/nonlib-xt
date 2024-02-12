@@ -120,8 +120,6 @@ private:
     int _nest;
 
     static int _dirty;                                                 /* count of changes */
-    
-    int _nudge_dirty;
 
     static void ensure_size ( size_t n );
 
@@ -142,7 +140,6 @@ private:
             
             _old_state = NULL;
             _nest = 0;
-            _nudge_dirty = 0;
 
             if ( loggable )
             {
@@ -167,10 +164,7 @@ private:
     static void clear_dirty ( void ) {  signal_dirty( _dirty = 0 ); }
 
 public:
-
-    void set_nudge ( void ) { ++_nudge_dirty; }
-    void clear_nudge ( void ) { _nudge_dirty = 0; }
-
+    
     static void set_dirty ( void ) {  signal_dirty( ++_dirty ); }
     static bool readonly ( void ) { return _readonly; }
 
@@ -235,14 +229,13 @@ public:
 
     static int dirty ( void ) { return _dirty; }
 
-    int nudge_dirty ( void ) { return _nudge_dirty; }
-
     void log_create  ( void ) const;
+
+protected:
 
     void log_start ( void );
     void log_end ( void );
 
-protected:
     void log_destroy ( void ) const;
 
     /* leaf subclasses *must* call log_create() at the end of their copy contructors */
