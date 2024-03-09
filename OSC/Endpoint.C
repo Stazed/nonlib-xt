@@ -1403,7 +1403,7 @@ namespace OSC
             free(_name);
             _name = 0;
         }
-        _name = strdup( name );
+        asprintf( &_name, "/%s", name );    // LibLO requires leading '/' for release 0.32
     }
 
     int
