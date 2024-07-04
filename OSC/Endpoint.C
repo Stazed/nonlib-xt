@@ -845,7 +845,7 @@ namespace OSC
 	int s = 0;
 	bool more = false;
 
-	lo_bundle b;
+	lo_bundle b = NULL;
 	if ( batch_mode )
 	{
 	    b = lo_bundle_new(LO_TT_IMMEDIATE);
