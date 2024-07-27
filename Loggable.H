@@ -231,10 +231,10 @@ public:
 
     void log_create  ( void ) const;
 
+protected:
+
     void log_start ( void );
     void log_end ( void );
-    
-protected:
 
     void log_destroy ( void ) const;
 
