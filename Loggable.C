@@ -823,7 +823,7 @@ Loggable::log_start ( void )
 void
 Loggable::log_end ( void )
 {
-    Locker lock( _lock );;
+    Locker lock( _lock );
 
     ASSERT( _old_state, "Programming error: log_end() called before log_start()" );
 

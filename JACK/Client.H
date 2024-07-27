@@ -117,6 +117,7 @@ namespace JACK
 //        float frame_rate ( void ) const { return jack_get_sample_rate( _client ); }
         nframes_t sample_rate ( void ) const { return jack_get_sample_rate( _client ); }
         int xruns ( void ) const { return _xruns; };
+        void clear_xruns( void ) { _xruns = 0; };
         bool freewheeling ( void ) const { return _freewheeling; }
         void freewheeling ( bool yes );
         bool zombified ( void ) const { return _zombified; }
