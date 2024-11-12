@@ -163,7 +163,7 @@ private:
     static bool replay ( FILE *fp, bool need_clear = true );
 
     static void signal_dirty ( int v ) { if ( _dirty_callback ) _dirty_callback( v, _dirty_callback_arg ); }
-    static void clear_dirty ( void ) {  signal_dirty( _dirty = 0 ); }
+    static void clear_dirty ( void ) { _dirty = 0; signal_dirty( 0 ); }
 
 public:
     
@@ -264,7 +264,7 @@ class Logger
 
 public:
 
-    Logger ( Loggable *l ) : _this( l )
+    explicit Logger ( Loggable *l ) : _this( l )
         {
             _this->log_start();
 
