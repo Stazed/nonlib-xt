@@ -41,8 +41,8 @@ class Log_Entry
 public:
 
     Log_Entry ( );
-    Log_Entry ( char **sa );
-    Log_Entry ( const char *s );
+    explicit Log_Entry ( char **sa );
+    explicit Log_Entry ( const char *s );
     ~Log_Entry ( );
 
 /****************/

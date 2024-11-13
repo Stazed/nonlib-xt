@@ -32,11 +32,8 @@ class Mutex
 
 public:
 
-    Mutex ( )
-        {
-//            pthread_mutex_init( &_lock, NULL );
-            _lock = _mutex_initializer;
-        }
+    Mutex ( ) : _lock(_mutex_initializer)
+        { }
 
     virtual ~Mutex ( )
         {
@@ -71,7 +68,7 @@ class Locker
 
 public:
 
-    Locker ( Mutex & lock ) : _lock( lock )
+    explicit Locker ( Mutex & lock ) : _lock( lock )
         {
             _lock.lock();
         }

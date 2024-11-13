@@ -45,7 +45,7 @@ public:
     static Thread *current ( void );
 
     Thread ( );
-    Thread ( const char *name );
+    explicit Thread ( const char *name );
 
     const char *name ( void ) const { return _name; }
     void name ( const char *name ) { _name = name; }

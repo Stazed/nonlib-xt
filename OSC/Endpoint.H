@@ -78,7 +78,7 @@ namespace OSC
 
         float value ( void ) const { return f; }
 
-        OSC_Float ( float v )
+        explicit OSC_Float ( float v )
             {
                 _type = 'f';
                 f = v;
@@ -92,7 +92,7 @@ namespace OSC
 
         int value ( void ) const { return i; }
 
-        OSC_Int ( int v )
+        explicit OSC_Int ( int v )
             {
                 _type = 'i';
                 i = v;
@@ -105,7 +105,7 @@ namespace OSC
 
         const char * value ( void ) const { return s; }
 
-        OSC_String ( const char *v )
+        explicit OSC_String ( const char *v )
             {
                 _type = 's';
                 s = v;
