@@ -39,7 +39,7 @@ class Block_Timer
 
 public:
 
-    Block_Timer ( const char *prefix )
+    explicit Block_Timer ( const char *prefix )
         {
             this->prefix = prefix;
 
