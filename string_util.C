@@ -54,9 +54,7 @@ char *escape_url ( const char *url )
     const char *s;
     char *w;
 
-    size_t max = 1024;
-
-    char r[max];
+    char r[1024];
 
     s = url;
 
@@ -79,7 +77,7 @@ char *escape_url ( const char *url )
             case '#':
             case '*':
             case ' ':
-                snprintf( w, max, "%%%2X", *s );
+                sprintf( w, "%%%2X", *s );
                 w += 2;
                 break;
             default:
