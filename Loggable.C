@@ -132,12 +132,8 @@ Loggable::open ( const char *filename )
             WARNING( "Could not open log file for reading!" );
             return false;
         }
-        else
-        {
-            _readonly = true;
-        }
     }
-    
+
     _readonly = false;
 
     load_unjournaled_state();
