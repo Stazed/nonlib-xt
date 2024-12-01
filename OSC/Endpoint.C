@@ -62,19 +62,23 @@ Method::~Method ()
 /* Signal */
 /**********/
 
-Signal::Signal ( const char *path, Direction dir )
+Signal::Signal ( const char *path, Direction dir ) :
+    _endpoint(NULL),
+    _peer(NULL),
+    _path(NULL),
+    _documentation(0),
+    _value(0.0f),
+    _direction(dir),
+    _handler(0),
+    _feedback_handler(0),
+    _user_data(0),
+    _parameter_limits(),
+    _parameter_infos(),
+    _connection_state_callback(0),
+    _connection_state_userdata(0)
 {
-    _direction = dir;
-    _path = NULL;
     if ( path )
         _path = strdup( path );
-    _value = 0.0f;
-    _endpoint = NULL;
-    _peer = NULL;
-    _documentation = 0;
-    _user_data = 0;
-    _connection_state_callback = 0;
-    _connection_state_userdata = 0;
 }
 
 Signal::~Signal ()

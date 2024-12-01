@@ -137,11 +137,20 @@ struct Parameter_Limits
     float min;
     float max;
     float default_value;
+
+    Parameter_Limits() :
+        min(0.0f),
+        max(0.0f),
+        default_value(0.0f) {}
 };
 struct Parameter_Infos
 {
     const char *label;
     int type;
+
+    Parameter_Infos() :
+        label(NULL),
+        type(0) {}
 };
 
 class Endpoint;
@@ -155,6 +164,13 @@ struct Peer
     lo_address addr;
 
     std::list<Signal*> _signals;
+
+    Peer() :
+        _scanning(false),
+        _scanning_current(false),
+        name(0),
+        addr(0),
+        _signals() {}
 };
 
 typedef int (*signal_handler) ( float value, void *user_data );
