@@ -60,18 +60,20 @@ namespace JACK
     }
 
 /* nframes is the number of frames to buffer */
-    Port::Port ( JACK::Client *client, jack_port_t *port )
+    Port::Port ( JACK::Client *client, jack_port_t *port ) :
+        _port(port),
+        _trackname(NULL),
+        _name(NULL),
+        _client(client),
+        _direction(Output),
+        _type(Audio),
+        _terminal(0),
+        _connections(NULL)
     {
-        _terminal = 0;
-        _connections = NULL;
-        _client = client;
-        _port = port;
         _name = strdup( jack_port_name( port ) );
-        _trackname = NULL;
         _direction = ( jack_port_flags( _port ) & JackPortIsOutput ) ? Output : Input;
         const char *type = jack_port_type( _port );
 
-        _type = Audio;
         if ( strstr( type, "MIDI") )
             _type = MIDI;
         else if ( strstr( type, "CV)") )
@@ -81,18 +83,16 @@ namespace JACK
 
     }
 
-    Port::Port ( JACK::Client *client, const char *trackname, const char *name, direction_e dir, type_e type )
+    Port::Port ( JACK::Client *client, const char *trackname, const char *name, direction_e dir, type_e type ) :
+        _port(0),
+        _trackname(NULL),
+        _name(NULL),
+        _client(client),
+        _direction(dir),
+        _type(type),
+        _terminal(0),
+        _connections(NULL)
     {
-        _port = 0;
-        _terminal = 0;
-        _name = NULL;
-        _trackname = NULL;
-        _connections = NULL;
-        _client = client;
-        _direction = dir;
-        _type = type;
-        _trackname = NULL;
-
         if ( trackname )
             _trackname = strdup( trackname );
 
