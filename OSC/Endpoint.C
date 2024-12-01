@@ -209,18 +209,19 @@ Endpoint::error_handler(int num, const char *msg, const char *path)
     WARNING( "LibLO server error %d in path %s: %s\n", num, path, msg);
 }
 
-Endpoint::Endpoint ()
-{
-    _learning_path = NULL;
-    _learning_callback = NULL;
-    _peer_signal_notification_callback = 0;
-    _peer_signal_notification_userdata = 0;
-    _peer_scan_complete_callback = 0;
-    _peer_scan_complete_userdata = 0;
-    _server = 0;
-    _name = 0;
-    owner = 0;
-}
+Endpoint::Endpoint () :
+    _server(0),
+    _addr(0),
+    _learning_path(NULL),
+    _learning_callback(NULL),
+    _learning_userdata(NULL),
+    _peer_scan_complete_callback(0),
+    _peer_scan_complete_userdata(0),
+    _name(0),
+    _peer_signal_notification_callback(0),
+    _peer_signal_notification_userdata(0),
+    owner(0)
+{ }
 
 int
 Endpoint::init ( int proto, const char *port )
@@ -1210,9 +1211,9 @@ Endpoint::del_method ( Method *meth )
 
     lo_server_del_method( _server, meth->path(), meth->typespec() );
 
-    delete meth;
-
     _methods.remove( meth );
+    
+    delete meth;
 }
 
 void
