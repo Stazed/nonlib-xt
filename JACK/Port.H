@@ -45,6 +45,9 @@ namespace JACK
 
         bool operator < ( const Port & rhs ) const;
 
+        /* not permitted */
+        Port & operator = ( const Port & rhs );
+
         enum direction_e { Output, Input };
         enum type_e { Audio, MIDI, CV };
 
