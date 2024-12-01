@@ -42,15 +42,15 @@ namespace NSM
 
 #define OSC_REPLY_ERR( errcode, value ) lo_send_from( ((NSM::Client*)user_data)->nsm_addr, ((NSM::Client*)user_data)->_server, LO_TT_IMMEDIATE, "/error", "sis", path, errcode, value )
 
-    Client::Client ( )
-    {
-        nsm_addr = 0;
-        nsm_client_id = 0;
-        _session_manager_name = 0;
-        nsm_is_active = false;
-        _server = 0;
-        _st = 0;
-    }
+    Client::Client ( ) :
+        nsm_url(NULL),
+        _server(0),
+        _st(0),
+        nsm_addr(0),
+        nsm_is_active(false),
+        nsm_client_id(0),
+        _session_manager_name(0)
+    { }
 
     Client::~Client ( )
     {
