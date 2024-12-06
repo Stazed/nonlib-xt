@@ -34,7 +34,7 @@ void unescape_url ( char *url )
         {
             char data[3] = { *(r + 1), *(r + 2), 0 };
 
-            int c;
+            unsigned int c;
 
             sscanf( data, "%2X", &c );
 
