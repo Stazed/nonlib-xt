@@ -641,6 +641,12 @@ Endpoint::get_connections ( const char *path )
         if (!strcmp( i->second.path.c_str(), path ) )
         {
             conn = (const char**)realloc( conn, sizeof( char * ) * (j + 2));
+
+            if ( conn == NULL )
+            {
+                WARNING ("realloc is NULL");
+                continue;
+            }
             conn[j++] = i->first.c_str();
         }
     }
@@ -927,6 +933,12 @@ Endpoint::address_matches ( lo_address addr1, lo_address addr2 )
     char *purl = strdup( lo_address_get_port( addr1 ) );
     char *url = strdup( lo_address_get_port( addr2 ) );
 
+    if ( (purl == NULL) || (url == NULL) )
+    {
+        WARNING ("strdup of purl or url is NULL");
+        return false;
+    }
+
     bool r = !strcmp( purl, url );
 
     free( purl );
@@ -957,6 +969,12 @@ Endpoint::find_peer_by_address ( lo_address addr )
 {
     char *url = strdup( lo_address_get_port( addr ) );
 
+    if ( url == NULL )
+    {
+        WARNING ("strdup of url is NULL");
+        return NULL;
+    }
+
     Peer *p = NULL;
 
     for ( std::list<Peer * >::iterator i = _peers.begin();
@@ -964,6 +982,12 @@ Endpoint::find_peer_by_address ( lo_address addr )
         ++i )
     {
         char *purl = strdup( lo_address_get_port((*i)->addr ) );
+
+        if ( purl == NULL )
+        {
+            WARNING ("strdup of purl is NULL");
+            continue;
+        }
 
         if (!strcmp( purl, url ) )
         {
