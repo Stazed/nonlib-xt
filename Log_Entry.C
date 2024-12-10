@@ -27,6 +27,13 @@
 Log_Entry::Log_Entry ( )
 {
     _sa = (char**)malloc( sizeof( char * ) );
+
+    if ( _sa == NULL )
+    {
+        WARNING ("Malloc of Log_Entry is NULL");
+        return;
+    }
+
     *_sa = NULL;
     _i = 0;
 }
@@ -98,6 +105,12 @@ Log_Entry::print ( void ) const
 {
     char *r = (char*)malloc( 1024 );
 
+    if ( r == NULL )
+    {
+        WARNING ("Malloc of print is NULL");
+        return NULL;
+    }
+
     r[0] = 0;
 
     for ( int i = 0; i < size(); ++i )
@@ -131,6 +144,12 @@ Log_Entry::parse_alist( const char *s )
 
     int tl = strlen( s );
     char **r = (char**)malloc( sizeof( char* ) * tl );
+
+    if ( r == NULL )
+    {
+        WARNING ("Malloc of parse_alist is NULL");
+        return NULL;
+    }
 
     bool quote = false;
     bool value = false;
@@ -261,6 +280,13 @@ void
 Log_Entry::grow (  )
 {
     _sa = (char**)realloc( _sa, sizeof( char * ) * (_i + 2) );
+
+    if ( _sa == NULL )
+    {
+        WARNING ("Malloc of grow is NULL");
+        return;
+    }
+
     _sa[ _i + 1 ] = NULL;
 }
 
