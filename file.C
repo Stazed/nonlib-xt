@@ -125,6 +125,12 @@ backwards_afgets ( FILE *fp )
         {
             size += 256;
             s = (char*)realloc( s, size );
+
+            if ( s == NULL )
+            {
+                printf ("In file.C - backwards_afgets, realloc is NULL\n");
+                return NULL;
+            }
         }
 
         s[i++] = c;
@@ -195,6 +201,12 @@ read_line ( const char *dir, const char *name  )
         return 0;
 
     char *value = (char*)malloc( 512 );
+
+    if ( value == NULL )
+    {
+        printf("Malloc of value is NULL: file.C read_line\n");
+        return NULL;
+    }
 
     value[0] = 0;
 
