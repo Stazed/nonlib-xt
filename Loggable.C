@@ -418,7 +418,7 @@ Loggable::do_this ( const char *s, bool reverse )
     char command[40];
     char *arguments = NULL;
 
-    int found = sscanf( s, "%s %X %s ", classname, &id, command );
+    int found = sscanf( s, "%39s %X %39s ", classname, &id, command );
 
     if ( 3 != found )
         FATAL( "Invalid journal entry format \"%s\"", s );
@@ -427,8 +427,7 @@ Loggable::do_this ( const char *s, bool reverse )
 
     if ( reverse )
     {
-//        sscanf( s, "%s %*X %s %*[^\n<]<< %m[^\n]", classname, command, &arguments );
-        sscanf( s, "%s %*X %s%*[^\n<]<< %m[^\n]", classname, command, &arguments );
+        sscanf( s, "%39s %*X %39s%*[^\n<]<< %m[^\n]", classname, command, &arguments );
         create = "destroy";
         destroy = "create";
 
@@ -436,7 +435,7 @@ Loggable::do_this ( const char *s, bool reverse )
     }
     else
     {
-        sscanf( s, "%s %*X %s %m[^\n<]", classname, command, &arguments );
+        sscanf( s, "%39s %*X %39s %m[^\n<]", classname, command, &arguments );
         create = "create";
         destroy = "destroy";
     }
