@@ -205,6 +205,7 @@ read_line ( const char *dir, const char *name  )
     if ( value == NULL )
     {
         printf("Malloc of value is NULL: file.C read_line\n");
+        fclose( fp );
         return NULL;
     }
 
