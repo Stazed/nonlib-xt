@@ -27,6 +27,7 @@
 Log_Entry::Log_Entry ( )
 {
     _sa = (char**)malloc( sizeof( char * ) );
+    _i = 0;
 
     if ( _sa == NULL )
     {
@@ -35,7 +36,6 @@ Log_Entry::Log_Entry ( )
     }
 
     *_sa = NULL;
-    _i = 0;
 }
 
 Log_Entry::Log_Entry ( char **sa )
@@ -124,6 +124,12 @@ Log_Entry::print ( void ) const
 
 	r = (char*)realloc( r, strlen(r) + strlen(t) + 1 );
 
+        if ( r == NULL )
+        {
+            WARNING ("Malloc of print is NULL");
+            return NULL;
+        }
+
         strcat( r, t );
 
 	free(t);
@@ -172,6 +178,11 @@ Log_Entry::parse_alist( const char *s )
                     int l = s - c;
 
                     char *pair = (char*)malloc( l + 1 );
+                    if ( pair == NULL )
+                    {
+                        WARNING ("Malloc of pair is NULL");
+                        return NULL;
+                    }
 
                     /* remove trailing space */
                     if ( c[ l  - 1 ] == ' ' )
