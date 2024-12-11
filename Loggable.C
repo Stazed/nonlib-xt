@@ -615,6 +615,12 @@ Loggable::snapshot ( const char *name )
         const char *filename = basename(name);
         char *dir = (char*)malloc( (strlen(name) - strlen(filename)) + 1 );
 
+        if ( dir == NULL )
+        {
+            DWARNING( "Could not malloc dir");
+            return false;
+        }
+
 _Pragma("GCC diagnostic push")
 _Pragma("GCC diagnostic ignored \"-Wstringop-overflow=\"")
         strncpy( dir, name, strlen(name) - strlen(filename) );
