@@ -33,6 +33,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifndef __linux__
+#include <libgen.h>
+#endif
+
 #include "file.h"
 
 // #include "const.h"
@@ -611,7 +615,20 @@ Loggable::snapshot ( const char *name )
     char *tmp  = NULL;
 
     {
+#ifndef __linux__
+        // libgen basename requires a mutable string
+        char* bname = malloc(strlen(name) + sizeof(char));
+        if ( bname == NULL )
+        {
+            DWARNING( "Could not malloc bname");
+            return false;
+        }
+        strcpy(bname, name);
+        const char *filename = basename(bname);
+        free(bname);
+#else
         const char *filename = basename(name);
+#endif
         char *dir = (char*)malloc( (strlen(name) - strlen(filename)) + 1 );
 
         if ( dir == NULL )

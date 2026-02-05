@@ -26,7 +26,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#ifdef __linux__
 #include <sys/vfs.h>
+#else
+#include <sys/mount.h>
+#include <sys/param.h>
+#endif
 
 unsigned long
 modification_time ( const char *file )

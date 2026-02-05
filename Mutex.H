@@ -23,41 +23,42 @@
 
 #include <pthread.h>
 
-const pthread_mutex_t _mutex_initializer = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
-
-class Mutex
-{
-
-    pthread_mutex_t _lock;
-
+class Mutex {
 public:
-
-    Mutex ( ) : _lock(_mutex_initializer)
-        { }
-
-    virtual ~Mutex ( )
+    Mutex()
         {
-            pthread_mutex_destroy( &_lock );
+            pthread_mutexattr_t attr;
+            pthread_mutexattr_init( &attr );
+            pthread_mutexattr_settype( &attr, PTHREAD_MUTEX_RECURSIVE );
+            pthread_mutex_init( &m_mutex, &attr );
+            pthread_mutexattr_destroy( &attr );
+        }
+
+    virtual ~Mutex()
+        {
+            pthread_mutex_destroy( &m_mutex );
         }
 
     void
     lock ( void )
         {
-            pthread_mutex_lock( &_lock );
+            pthread_mutex_lock( &m_mutex );
         }
 
     void
     unlock ( void )
         {
-            pthread_mutex_unlock( &_lock );
+            pthread_mutex_unlock( &m_mutex );
         }
 
     bool
     trylock ( void )
         {
-            return pthread_mutex_trylock( &_lock ) == 0;
+            return pthread_mutex_trylock( &m_mutex ) == 0;
         }
 
+private:
+    pthread_mutex_t m_mutex;
 };
 
 
