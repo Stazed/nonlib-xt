@@ -617,7 +617,7 @@ Loggable::snapshot ( const char *name )
     {
 #ifndef __linux__
         // libgen basename requires a mutable string
-        char* bname = malloc(strlen(name) + sizeof(char));
+        char* bname = (char *)malloc(strlen(name) + sizeof(char));
         if ( bname == NULL )
         {
             DWARNING( "Could not malloc bname");
