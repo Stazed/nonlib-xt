@@ -25,7 +25,13 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-extern char * program_invocation_short_name;
+#undef GET_PROGRAM_NAME
+#ifdef __GLIBC__
+#   define GET_PROGRAM_NAME() program_invocation_short_name
+#else /* *BSD and OS X */
+#   include <stdlib.h>
+#   define GET_PROGRAM_NAME() getprogname()
+#endif
 
 void
 warnf ( warning_t level,
@@ -40,7 +46,7 @@ warnf ( warning_t level,
 		"assertion", "\033[1;31m"
 	};
 
-        module = program_invocation_short_name;
+        module = GET_PROGRAM_NAME();
 
 	if ( module )
 		fprintf( stderr, "[\033[1;30m%s\033[0m] ", module );
