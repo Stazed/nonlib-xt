@@ -50,9 +50,13 @@ Thread::init ( void )
 }
 
 bool
-Thread::is ( const char *name )
+Thread::is(const char *name)
 {
-    return ! strcmp( Thread::current()->name(), name );
+    Thread *t = Thread::current();
+    if (!t)
+        return false;
+
+    return !strcmp(t->name(), name);
 }
 
 /** to be used by existing threads (that won't call clone()) */
