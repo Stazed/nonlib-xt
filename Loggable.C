@@ -606,50 +606,37 @@ Loggable::snapshot ( FILE *fp )
 bool
 Loggable::snapshot ( const char *name )
 {
-    FILE *fp;
+    if (!name)
+        return false;
 
-    char *tmp  = NULL;
+    std::string path(name);
+    std::string filename = basename(const_cast<char*>(name));
 
-    {
-        const char *filename = basename(name);
-        char *dir = (char*)malloc( (strlen(name) - strlen(filename)) + 1 );
-
-        if ( dir == NULL )
-        {
-            DWARNING( "Could not malloc dir");
-            return false;
-        }
-
-_Pragma("GCC diagnostic push")
-_Pragma("GCC diagnostic ignored \"-Wstringop-overflow=\"")
-        strncpy( dir, name, strlen(name) - strlen(filename) );
-_Pragma("GCC diagnostic pop")
-
-        dir[(strlen(name) - strlen(filename))] = '\0';  // make sure to null terminate
-        /* Create tmp file with '#' in front of the file name -
+    std::string dir = path.substr(0, path.size() - filename.size());
+    /* Create tmp file with '#' in front of the file name -
          to be later renamed if all goes well */
-        asprintf( &tmp, "%s#%s", dir, filename );
-        free(dir);
-    }
+    std::string tmp = dir + "#" + filename;
 
-    if ( ! ( fp = fopen( tmp, "w" ) ))
+    FILE *fp = fopen(tmp.c_str(), "w");
+    if (!fp)
     {
-        DWARNING( "Could not open file for writing: %s", tmp );
+        DWARNING("Could not open file for writing: %s", tmp.c_str());
         return false;
     }
 
-    bool r = snapshot( fp );
-
-    fclose( fp );
+    bool r = snapshot(fp);
+    fclose(fp);
 
     /* Do not rename the temp file and clobber existing file if something went wrong */
-    if(r)
+    if (r)
     {
         /* Looks like all went well, so rename the temp file to the correct name */
-        rename( tmp, name );
+        if (rename(tmp.c_str(), name) != 0)
+        {
+            DWARNING("Could not rename %s to %s", tmp.c_str(), name);
+            r = false;
+        }
     }
-
-    free(tmp);
 
     return r;
 }
