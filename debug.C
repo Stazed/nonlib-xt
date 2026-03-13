@@ -25,7 +25,12 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-extern char * program_invocation_short_name;
+#if defined(__GLIBC__)
+extern char *program_invocation_short_name;
+#define PROGRAM_SHORT_NAME program_invocation_short_name
+#else
+static const char *PROGRAM_SHORT_NAME = "non-timeline-xt";
+#endif
 
 void
 warnf ( warning_t level,
@@ -40,7 +45,7 @@ warnf ( warning_t level,
 		"assertion", "\033[1;31m"
 	};
 
-        module = program_invocation_short_name;
+        module = PROGRAM_SHORT_NAME;
 
 	if ( module )
 		fprintf( stderr, "[\033[1;30m%s\033[0m] ", module );
