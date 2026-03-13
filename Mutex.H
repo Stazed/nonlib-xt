@@ -23,17 +23,20 @@
 
 #include <pthread.h>
 
-const pthread_mutex_t _mutex_initializer = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
-
 class Mutex
 {
 
     pthread_mutex_t _lock;
 
 public:
-
-    Mutex ( ) : _lock(_mutex_initializer)
-        { }
+    Mutex()
+    {
+        pthread_mutexattr_t attr;
+        pthread_mutexattr_init(&attr);
+        pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+        pthread_mutex_init(&_lock, &attr);
+        pthread_mutexattr_destroy(&attr);
+    }
 
     virtual ~Mutex ( )
         {
