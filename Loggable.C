@@ -610,9 +610,23 @@ Loggable::snapshot ( const char *name )
         return false;
 
     std::string path(name);
-    std::string filename = basename(const_cast<char*>(name));
 
-    std::string dir = path.substr(0, path.size() - filename.size());
+    std::string filename;
+    std::string dir;
+
+    std::string::size_type pos = path.find_last_of('/');
+
+    if (pos == std::string::npos)
+    {
+        filename = path;
+        dir = "";
+    }
+    else
+    {
+        filename = path.substr(pos + 1);
+        dir = path.substr(0, pos + 1);
+    }
+
     /* Create tmp file with '#' in front of the file name -
          to be later renamed if all goes well */
     std::string tmp = dir + "#" + filename;
