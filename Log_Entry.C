@@ -21,8 +21,139 @@
 
 #include "Log_Entry.H"
 
-// #include "const.h"
+#include <vector>
+#include <string>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
+
 #include "debug.h"
+
+namespace
+{
+
+static void
+unescape_in_place( std::string &s )
+{
+    std::string out;
+    out.reserve( s.size() );
+
+    for ( std::string::size_type i = 0; i < s.size(); ++i )
+    {
+        if ( s[i] == '\\' && i + 1 < s.size() )
+        {
+            ++i;
+            switch ( s[i] )
+            {
+                case 'n':
+                    out += '\n';
+                    break;
+                case '"':
+                    out += '"';
+                    break;
+                case '\\':
+                    out += '\\';
+                    break;
+                default:
+                    out += s[i];
+                    break;
+            }
+        }
+        else
+            out += s[i];
+    }
+
+    s.swap( out );
+}
+
+static std::string
+trim_trailing_spaces( const std::string &s )
+{
+    std::string::size_type end = s.size();
+
+    while ( end > 0 && s[ end - 1 ] == ' ' )
+        --end;
+
+    return s.substr( 0, end );
+}
+
+static bool
+parse_one_pair( const char *&p, std::string &name, std::string &value )
+{
+    name.clear();
+    value.clear();
+
+    while ( *p == ' ' )
+        ++p;
+
+    if ( *p == '\0' )
+        return false;
+
+    if ( *p != ':' )
+        return false;
+
+    const char *name_start = p;
+    while ( *p && *p != ' ' )
+        ++p;
+
+    name.assign( name_start, p - name_start );
+
+    while ( *p == ' ' )
+        ++p;
+
+    if ( *p == '"' )
+    {
+        ++p;
+        std::string raw;
+
+        while ( *p )
+        {
+            if ( *p == '\\' && p[1] )
+            {
+                raw += *p++;
+                raw += *p++;
+                continue;
+            }
+
+            if ( *p == '"' )
+            {
+                ++p;
+                break;
+            }
+
+            raw += *p++;
+        }
+
+        unescape_in_place( raw );
+        value = raw;
+    }
+    else
+    {
+        const char *value_start = p;
+        while ( *p )
+        {
+            if ( *p == ' ' )
+            {
+                const char *q = p;
+                while ( *q == ' ' )
+                    ++q;
+
+                if ( *q == ':' )
+                    break;
+            }
+
+            ++p;
+        }
+
+        value.assign( value_start, p - value_start );
+        value = trim_trailing_spaces( value );
+        unescape_in_place( value );
+    }
+
+    return true;
+}
+
+} /* namespace */
 
 Log_Entry::Log_Entry ( )
 {
@@ -70,48 +201,11 @@ Log_Entry::~Log_Entry ( )
     free( _sa );
 }
 
-
-/** remove escapes from string /s/ in-place */
-static void
-unescape ( char *s )
-{
-    char *r = s;
-    for ( ; *s; s++, r++ )
-    {
-        if ( '\\' == *s )
-        {
-            switch ( *(++s) )
-            {
-                case 'n':
-                    *r = '\n';
-                    break;
-                case '"':
-                    *r = '"';
-                    break;
-                default:
-                    break;
-            }
-        }
-        else
-            *r = *s;
-    }
-
-    *r = '\0';
-}
-
 /** return a dynamically allocated string representing this log entry */
 char *
 Log_Entry::print ( void ) const
 {
-    char *r = (char*)malloc( 1024 );
-
-    if ( r == NULL )
-    {
-        WARNING ("Malloc of print is NULL");
-        return NULL;
-    }
-
-    r[0] = 0;
+    std::string out;
 
     for ( int i = 0; i < size(); ++i )
     {
@@ -119,127 +213,78 @@ Log_Entry::print ( void ) const
 
         get( i, &s, &v );
 
-        char *t;
-        asprintf( &t, "%s %s%s", s, v, size() == i + 1 ? "" : " " );
-
-	r = (char*)realloc( r, strlen(r) + strlen(t) + 1 );
-
-        if ( r == NULL )
-        {
-            WARNING ("Malloc of print is NULL");
-            return NULL;
-        }
-
-        strcat( r, t );
-
-	free(t);
+        out += s;
+        out += ' ';
+        out += v;
+        if ( size() != i + 1 )
+            out += ' ';
     }
 
-    return r;
-}
-
-/** sigh. parse a string of ":name value :name value" pairs into an
- * array of strings, one per pair */
-// FIXME: doesn't handle the case of :name ":foo bar", nested quotes
-// or other things it should.
-char **
-Log_Entry::parse_alist( const char *s )
-{
-
-// FIXME: bogus over allocation...
-
-    int tl = strlen( s );
-    char **r = (char**)malloc( sizeof( char* ) * tl );
-
+    char *r = (char*)malloc( out.size() + 1 );
     if ( r == NULL )
     {
-        WARNING ("Malloc of parse_alist is NULL");
+        WARNING ("Malloc of print is NULL");
         return NULL;
     }
 
-    bool quote = false;
-    bool value = false;
-    const char *c = NULL;
-    int i = 0;
-    for ( ; ; s++ )
+    memcpy( r, out.c_str(), out.size() + 1 );
+    return r;
+}
+
+/** parse a string of ":name value :name value" pairs into an
+ * array of strings, one per pair */
+char **
+Log_Entry::parse_alist( const char *s )
+{
+    if ( !s || !*s )
     {
-        switch ( *s )
+        char **r = (char**)malloc( sizeof( char* ) );
+        if ( !r )
         {
-            case '\0':
-            case ' ':
-                if ( ! quote && c )
-                {
-                    if ( ! value )
-                    {
-                        value = true;
-                        break;
-                    }
-
-                    int l = s - c;
-
-                    char *pair = (char*)malloc( l + 1 );
-                    if ( pair == NULL )
-                    {
-                        WARNING ("Malloc of pair is NULL");
-                        return NULL;
-                    }
-
-                    /* remove trailing space */
-                    if ( c[ l  - 1 ] == ' ' )
-                        --l;
-
-                    strncpy( pair, c, l );
-
-                    pair[ l ] = '\0';
-
-                    r[ i++ ] = pair;
-
-                    /* split */
-
-                    strtok( pair, " " );
-
-                    /* remove quotes */
-                    char *v = pair + strlen( pair ) + 1;
-
-                    unescape( v );
-
-                    if  ( *v == '"' )
-                    {
-//                    v++;
-                        if ( v[ strlen( v ) - 1 ] != '"' )
-                            WARNING( "invalid quoting in log entry!" );
-                        else
-                        {
-                            v[ strlen( v ) - 1 ] = '\0';
-                            memmove( v, v + 1, strlen( v ) + 1 );
-                        }
-                    }
-
-                    c = NULL;
-                }
-                break;
-            case ':':                                           /* this is a key */
-                if ( ! quote && ! c )
-                {
-                    c = s;
-                    value = false;
-                }
-                break;
-            case '"':
-                quote = !quote;
-                break;
-            case '\\':
-                s++;
-                break;
+            WARNING ("Malloc of parse_alist is NULL");
+            return NULL;
         }
-
-        if ( *s == '\0' )
-            break;
-
+        r[0] = NULL;
+        return r;
     }
 
-    r[ i ] = NULL;
+    std::vector<char*> pairs;
+    const char *p = s;
 
+    while ( *p )
+    {
+        std::string name;
+        std::string value;
+
+        if ( !parse_one_pair( p, name, value ) )
+            break;
+ 
+        char *pair = make_pair( name.c_str(), value.c_str() );
+        if ( !pair )
+        {
+            WARNING ("Malloc of pair is NULL");
+            for ( size_t i = 0; i < pairs.size(); ++i )
+                free( pairs[i] );
+            return NULL;
+        }
+
+        pairs.push_back( pair );
+    }
+
+    char **r = (char**)malloc( sizeof( char* ) * ( pairs.size() + 1 ) );
+    if ( !r )
+    {
+        WARNING ("Malloc of parse_alist is NULL");
+        for ( size_t i = 0; i < pairs.size(); ++i )
+            free( pairs[i] );
+        return NULL;
+    }
+
+    for ( size_t i = 0; i < pairs.size(); ++i )
+        r[i] = pairs[i];
+
+    r[ pairs.size() ] = NULL;
+ 
     return r;
 }
 
@@ -287,17 +332,44 @@ Log_Entry::diff ( Log_Entry *e1, Log_Entry *e2 )
     return w == 0 ? false : true;
 }
 
+char *
+Log_Entry::make_pair( const char *name, const char *value )
+{
+    if ( !name )
+        name = "";
+
+    if ( !value )
+        value = "";
+
+    const size_t name_len = strlen( name );
+    const size_t value_len = strlen( value );
+
+    char *pair = (char*)malloc( name_len + 1 + value_len + 1 );
+    if ( !pair )
+    {
+        WARNING ("Malloc of pair is NULL");
+        return NULL;
+    }
+
+    memcpy( pair, name, name_len );
+    pair[ name_len ] = '\0';
+    memcpy( pair + name_len + 1, value, value_len + 1 );
+
+    return pair;
+}
+
 void
 Log_Entry::grow (  )
 {
-    _sa = (char**)realloc( _sa, sizeof( char * ) * (_i + 2) );
+    char **tmp = (char**)realloc( _sa, sizeof( char * ) * (_i + 2) );
 
-    if ( _sa == NULL )
+    if ( tmp == NULL )
     {
         WARNING ("Malloc of grow is NULL");
         return;
     }
 
+    _sa = tmp;
     _sa[ _i + 1 ] = NULL;
 }
 
@@ -320,7 +392,7 @@ Log_Entry::remove ( const char *name )
 {
     for ( int i = 0; i < _i; i++ )
     {
-        if ( !strcmp( _sa[ i ], name ) )
+        if ( _sa[i] && !strcmp( _sa[ i ], name ) )
         {
             free( _sa[i] );
             _sa[i] = NULL;
@@ -332,12 +404,4 @@ char **
 Log_Entry::sa ( void )
 {
     return _sa;
-
-/*   char **sa = _sa; */
-
-/* //    _sa = NULL; */
-
-/*     return sa; */
-/* } */
-
 }

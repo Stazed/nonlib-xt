@@ -492,7 +492,6 @@ Loggable::escape ( const char *s )
     r.clear();
     r.reserve( strlen( s ) * 2 + 1 );
 
-    size_t i = 0;
     for ( ; *s; ++s )
     {
         if ( '\n' == *s )

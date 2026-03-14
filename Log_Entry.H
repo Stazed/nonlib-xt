@@ -24,10 +24,11 @@
 #include "Loggable.H"
 
 #include "types.h"
+#include <string>
+#include <cstring>
 
 class Log_Entry
 {
-//    vector <Pair> _sa;
     char **_sa;
     int _i;
 
@@ -36,6 +37,29 @@ class Log_Entry
     Log_Entry & operator= ( const Log_Entry &rhs );
 
     static char ** parse_alist ( const char *s );
+    static char * make_pair ( const char *name, const char *value );
+
+    template <typename... Args>
+    void add_formatted ( const char *name, const char *format, Args... args )
+        {
+            grow();
+            if ( !valid() ) return;
+
+            int needed = snprintf( NULL, 0, format, args... );
+            if ( needed < 0 )
+                return;
+
+            std::string value;
+            value.resize( static_cast<size_t>( needed ) );
+            snprintf( &value[0], value.size() + 1, format, args... );
+
+            _sa[ _i ] = make_pair( name, value.c_str() );
+            if ( !_sa[ _i ] )
+                return;
+
+            ++_i;
+        }
+
     static bool log_diff (  char **sa1, char **sa2 );
 
 public:
@@ -50,20 +74,26 @@ public:
 /****************/
 
     void grow (  );
+    bool valid ( void ) const { return _sa != NULL; }
 
-#define ADD( type, format, exp )                                \
-    void add ( const char *name, type v )                       \
-        {                                                       \
-            grow();                                             \
-            (void)asprintf( &_sa[ _i ], "%s " format, name, (exp) );  \
-            strtok( _sa[ _i++ ], " " );                         \
+#define ADD( type, format, exp )                                       \
+    void add ( const char *name, type v )                              \
+        {                                                              \
+            add_formatted( name, format, (exp) );                      \
         }
 
     void add_raw ( const char *name, const char *v )
         {
             grow();
-            (void)asprintf( &_sa[ _i ], "%s %s", name, v );
-            strtok( _sa[ _i++ ], " " );
+
+            if ( !valid() )
+                return;
+
+            _sa[ _i ] = make_pair( name, v ? v : "" );
+            if ( !_sa[ _i ] )
+                return;
+
+            ++_i;
         }
 
 /***************/
@@ -78,18 +108,6 @@ public:
     char **sa ( void );
 
     char *print ( void ) const;
-
-/* #define ADD ( type, format, exp )             \ */
-/*     void add ( const char *name, type v ) \ */
-/*         { \ */
-/*             char pat[ 256 ]; \ */
-/*             Pair p; \ */
-/*             p.name = strdup( name ); \ */
-/*             snprintf( pat, sizeof( pat ), format, exp ); \ */
-/*             p.value = strdup( pat ); \ */
-/*             _sa.push( p ); \ */
-/*         } \ */
-
 
     void remove ( const char *s );
 
