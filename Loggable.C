@@ -30,8 +30,10 @@
 #include "Loggable.H"
 
 #include <stdlib.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <string>
 
 #include "file.h"
 
@@ -41,10 +43,106 @@
 #include "Mutex.H"
 
 #include <algorithm>
+#include <sys/stat.h>
+#include <unistd.h>
+
 using std::min;
 using std::max;
 
-
+namespace
+{
+
+static bool
+read_line( FILE *fp, std::string &out )
+{
+    if ( !fp )
+        return false;
+
+    out.clear();
+
+    int ch = 0;
+    while ( ( ch = fgetc( fp ) ) != EOF )
+    {
+        if ( ch == '\n' )
+            return true;
+
+        out += static_cast<char>( ch );
+    }
+
+    return !out.empty();
+}
+
+static const char *
+skip_ws( const char *s )
+{
+    while ( s && *s == ' ' )
+        ++s;
+
+    return s;
+}
+
+static const char *
+skip_token( const char *s )
+{
+    s = skip_ws( s );
+
+    while ( s && *s && *s != ' ' )
+        ++s;
+
+    return skip_ws( s );
+}
+
+static char *
+dup_rest_after_tokens( const char *s, int token_count )
+{
+    const char *p = s;
+
+    for ( int i = 0; i < token_count; ++i )
+    {
+        p = skip_token( p );
+        if ( !p || !*p )
+            return NULL;
+    }
+
+    p = skip_ws( p );
+
+    if ( !p || !*p )
+        return NULL;
+
+    return strdup( p );
+}
+
+static char *
+dup_forward_arguments( const char *s )
+{
+    char *args = dup_rest_after_tokens( s, 3 );
+    if ( !args )
+        return NULL;
+
+    char *sep = strstr( args, " << " );
+    if ( sep )
+        *sep = '\0';
+
+    return args;
+}
+
+static char *
+dup_reverse_arguments( const char *s )
+{
+    const char *sep = strstr( s, " << " );
+    if ( !sep )
+        return NULL;
+
+    sep += 4;
+
+    if ( !*sep )
+        return NULL;
+
+    return strdup( sep );
+}
+
+} /* namespace */
+
 
 #ifndef NDEBUG
 bool Loggable::_snapshotting = false;
@@ -126,6 +224,7 @@ Loggable::open ( const char *filename )
     if ( ! ( fp = fopen( filename, "a+" ) ) )
     {
         WARNING( "Could not open log file for writing!" );
+        _readonly = true;
         
         if ( ! ( fp = fopen( filename, "r" ) ) )
         {
@@ -133,8 +232,8 @@ Loggable::open ( const char *filename )
             return false;
         }
     }
-
-    _readonly = false;
+    else
+        _readonly = false;
 
     load_unjournaled_state();
 
@@ -142,11 +241,18 @@ Loggable::open ( const char *filename )
     {
         MESSAGE( "Loading snapshot" );
 
-        FILE *fp = fopen( "snapshot", "r" );
+        FILE *sfp = fopen( "snapshot", "r" );
 
-        replay( fp );
+        if ( !sfp )
+        {
+            WARNING( "Could not open snapshot for reading!" );
+            fclose( fp );
+            return false;
+        }
 
-        fclose( fp );
+        replay( sfp );
+
+        fclose( sfp );
     }
     else
     {
@@ -176,22 +282,39 @@ Loggable::load_unjournaled_state ( void )
         return false;
     }
 
-    unsigned int id;
-    char *buf;
+    std::string line;
 
-    while ( fscanf( fp, "%X set %m[^\n]\n", &id, &buf ) == 2 )
+    while ( read_line( fp, line ) )
     {
+        unsigned int id = 0;
+        char command[40];
+        char *buf = NULL;
+        const int found = sscanf( line.c_str(), "%X %39s", &id, command );
+        if ( found != 2 )
+            continue;
+
+        if ( strcmp( command, "set" ) != 0 )
+            continue;
+
+        buf = dup_rest_after_tokens( line.c_str(), 2 );
+        if ( !buf )
+            continue;
+
+        if ( _loggables[ id ].unjournaled_state )
+        {
+            delete _loggables[ id ].unjournaled_state;
+            _loggables[ id ].unjournaled_state = NULL;
+        }
+
         _loggables[ id ].unjournaled_state = new Log_Entry( buf );
-        free(buf);
-    }
+        free( buf );
+     }
 
     fclose( fp );
 
     return true;
 }
 
-#include <sys/stat.h>
-#include <unistd.h>
 
 /** replay journal or snapshot */
 bool
@@ -216,33 +339,37 @@ Loggable::replay ( FILE *fp, bool need_clear )
     /* Set the pasting flag  */
     _is_pasting = true;
 
-    char *buf = NULL;
-
     struct stat st;
+    memset( &st, 0, sizeof( st ) );
     fstat( fileno( fp ), &st );
 
     off_t total = st.st_size;
-    off_t current = 0;
 
     if ( _progress_callback )
         _progress_callback( 0, _progress_callback_arg );
 
-    while ( fscanf( fp, "%m[^\n]\n", &buf ) == 1 )
+    std::string line;
+    while ( read_line( fp, line ) )
     {
-        if ( ! ( ! strcmp( buf, "{" ) || ! strcmp( buf, "}" ) ) )
+        if ( line != "{" && line != "}" )
         {
+            const char *buf = line.c_str();
+
             if ( *buf == '\t' )
                 do_this( buf + 1, false );
             else
                 do_this( buf, false );
         }
 
-        free(buf);
-
-        current = ftell( fp );
-
         if ( _progress_callback )
-            _progress_callback( current * 100 / total, _progress_callback_arg );
+        {
+            const off_t current = ftell( fp );
+            const int percent = total > 0
+                ? static_cast<int>( current * 100 / total )
+                : 100;
+
+            _progress_callback( percent, _progress_callback_arg );
+        }
     }
 
     if ( _progress_callback )
@@ -357,36 +484,32 @@ Loggable::update_id ( unsigned int id )
 const char *
 Loggable::escape ( const char *s )
 {
-    static size_t rl = 256;
-    static char *r = new char[rl + 1];
+    static thread_local std::string r;
 
-    if ( strlen(s) * 2 > rl )
-    {
-	delete []r;
-	rl = strlen(s) * 2;
-	r = new char[ rl + 1 ];
-    }
+    if ( !s )
+        s = "";
+
+    r.clear();
+    r.reserve( strlen( s ) * 2 + 1 );
 
     size_t i = 0;
-    for ( ; *s && i < rl; ++i, ++s )
+    for ( ; *s; ++s )
     {
         if ( '\n' == *s )
         {
-            r[ i++ ] = '\\';
-            r[ i ] = 'n';
+            r += '\\';
+            r += 'n';
         }
         else if ( '"' == *s )
         {
-            r[ i++ ] = '\\';
-            r[ i ] = '"';
+            r += '\\';
+            r += '"';
         }
         else
-            r[ i ] = *s;
+            r += *s;
     }
 
-    r[ i ] = '\0';
-
-    return r;
+    return r.c_str();
 }
 
 unsigned int Loggable::_relative_id = 0;
@@ -427,7 +550,8 @@ Loggable::do_this ( const char *s, bool reverse )
 
     if ( reverse )
     {
-        sscanf( s, "%39s %*X %39s%*[^\n<]<< %m[^\n]", classname, command, &arguments );
+        arguments = dup_reverse_arguments( s );
+
         create = "destroy";
         destroy = "create";
 
@@ -435,7 +559,7 @@ Loggable::do_this ( const char *s, bool reverse )
     }
     else
     {
-        sscanf( s, "%39s %*X %39s %m[^\n<]", classname, command, &arguments );
+        arguments = dup_forward_arguments( s );
         create = "create";
         destroy = "destroy";
     }
