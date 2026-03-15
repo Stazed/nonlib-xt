@@ -22,15 +22,11 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/statvfs.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#ifdef __linux__
-#include <sys/vfs.h>
-#else
-#include <sys/mount.h>
-#endif
 
 unsigned long
 modification_time ( const char *file )
@@ -72,17 +68,26 @@ exists ( const char *name )
 bool
 acquire_lock ( int *lockfd, const char *filename )
 {
+    if ( !lockfd || !filename )
+        return false;
+ 
     struct flock fl;
-
+    memset( &fl, 0, sizeof( fl ) );
     fl.l_type = F_WRLCK;
     fl.l_whence = SEEK_SET;
     fl.l_start = 0;
     fl.l_len = 0;
 
-    *lockfd = ::creat( filename, 0777 );
+    *lockfd = ::open( filename, O_RDWR | O_CREAT, 0666 );
+    if ( *lockfd < 0 )
+        return false;
 
     if ( fcntl( *lockfd, F_SETLK, &fl ) != 0 )
+    {
+        ::close( *lockfd );
+        *lockfd = 0;
         return false;
+    }
 
     return true;
 }
@@ -90,11 +95,25 @@ acquire_lock ( int *lockfd, const char *filename )
 void
 release_lock ( int *lockfd, const char *filename )
 {
-    unlink( filename );
+    if ( filename )
+        unlink( filename );
 
-    ::close( *lockfd );
+    if ( lockfd && *lockfd > 0 )
+    {
+        ::close( *lockfd );
+        *lockfd = 0;
+    }
+}
 
-    *lockfd = 0;
+static void
+reverse_buffer( char *s, size_t len )
+{
+    for ( size_t i = 0, j = len ? len - 1 : 0; i < j; ++i, --j )
+    {
+        const char c = s[i];
+        s[i] = s[j];
+        s[j] = c;
+    }
 }
 
 int
@@ -125,19 +144,22 @@ backwards_afgets ( FILE *fp )
         if ( i > 0 && '\n' == c )
             break;
 
-        if ( i >= size )
+        if ( i + 1 >= size )
         {
             size += 256;
-            s = (char*)realloc( s, size );
+            char *tmp = (char*)realloc( s, size );
 
-            if ( s == NULL )
+            if ( tmp == NULL )
             {
                 printf ("In file.C - backwards_afgets, realloc is NULL\n");
+                free( s );
                 return NULL;
             }
+
+            s = tmp;
         }
 
-        s[i++] = c;
+        s[i++] = (char)c;
 
     }
     
@@ -145,15 +167,7 @@ backwards_afgets ( FILE *fp )
     {
         s[i] = 0;
         
-        int len = strlen(s) ;
-        int c, i, j;
-
-        for (i = 0, j = len - 1; i < j; i++, j--)
-        {
-            c = s[i];
-            s[i] = s[j];
-            s[j] = c;
-        }
+        reverse_buffer( s, i );
     }
 
     fseek( fp, 1, SEEK_CUR );
@@ -222,30 +236,24 @@ read_line ( const char *dir, const char *name  )
     return value;
 }
 
-#include <sys/statvfs.h>
-
 /** return the number of blocks free on filesystem containing file named /file/ */
-fsblkcnt_t
+size_t
 free_space ( const char *file )
 {
-    struct statfs st;
+    struct statvfs st;
     memset( &st, 0, sizeof( st ) );
 
-    statfs( file, &st );
-
-    return st.f_bavail;
+    return statvfs( file, &st ) == 0 ? (size_t)st.f_bavail : 0;
 }
 
 /** return the total number of blocks on filesystem containing file named /file/ */
-fsblkcnt_t
+size_t
 total_space ( const char *file )
 {
-    struct statfs st;
+    struct statvfs st;
     memset( &st, 0, sizeof( st ) );
 
-    statfs( file, &st );
-
-    return st.f_blocks;
+    return statvfs( file, &st ) == 0 ? (size_t)st.f_blocks : 0;
 }
 
 /** return the percentage of usage on filesystem containing file named /file/ */
@@ -254,6 +262,9 @@ percent_used ( const char *file )
 {
     const double ts = total_space( file );
     const double fs = free_space( file );
+
+    if ( ts <= 0.0 )
+        return 0;
 
     double percent_free = ( ( fs / ts ) * 100.0f );
 
