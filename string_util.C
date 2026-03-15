@@ -21,26 +21,44 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string>
+#include <cctype>
+
+static bool
+is_hex_digit( char c )
+{
+    return std::isxdigit( static_cast<unsigned char>( c ) ) != 0;
+}
 
 void unescape_url ( char *url )
 {
+    if ( !url )
+        return;
+
     char *r, *w;
 
     r = w = url;
 
     for ( ; *r; r++, w++ )
     {
-        if ( *r == '%' )
+        if ( *r == '%' &&
+             r[1] != '\0' &&
+             r[2] != '\0' &&
+             is_hex_digit( r[1] ) &&
+             is_hex_digit( r[2] ) )
         {
             char data[3] = { *(r + 1), *(r + 2), 0 };
 
             unsigned int c;
 
-            sscanf( data, "%2X", &c );
-
-            *w = c;
-
-            r += 2;
+            if ( sscanf( data, "%2X", &c ) == 1 )
+            {
+                *w = static_cast<char>( c );
+                r += 2;
+            }
+            else
+                *w = *r;
         }
         else
             *w = *r;
@@ -51,23 +69,19 @@ void unescape_url ( char *url )
 
 char *escape_url ( const char *url )
 {
-    const char *s;
-    char *w;
+    if ( !url )
+        return strdup( "" );
 
-    char r[1024];
+    std::string out;
 
-    s = url;
-
-    w = r;
-
-    for ( ; *s && w < r + sizeof( r ); s++, w++ )
+    for ( const unsigned char *s = reinterpret_cast<const unsigned char *>( url ); *s; ++s )
     {
         switch ( *s )
         {
             case '<':
             case '>':
             case '%':
-// liblo doesn't like these in method names
+            /* liblo doesn't like these in method names */
             case '[':
             case ']':
             case '{':
@@ -77,17 +91,22 @@ char *escape_url ( const char *url )
             case '#':
             case '*':
             case ' ':
-                sprintf( w, "%%%2X", *s );
-                w += 2;
+            {
+                char encoded[4];
+                snprintf( encoded, sizeof( encoded ), "%%%02X", *s );
+                out += encoded;
                 break;
+            }
             default:
-                *w = *s;
+                out += static_cast<char>( *s );
                 break;
-                
         }
     }
 
-    *w = 0;
-    
-    return strdup( r );
+    char *r = (char*)malloc( out.size() + 1 );
+    if ( !r )
+        return NULL;
+
+    memcpy( r, out.c_str(), out.size() + 1 );
+    return r;
 }
