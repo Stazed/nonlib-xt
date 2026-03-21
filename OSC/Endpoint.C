@@ -57,7 +57,7 @@ Method::~Method ()
     if ( _documentation )
         free( _documentation );
 }
-
+
 /**********/
 /* Signal */
 /**********/

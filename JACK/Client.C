@@ -24,8 +24,6 @@
 
 #include <algorithm>
 
-
-
 #include "../nonlib/debug.h"
 
 #ifdef __SSE2_MATH__

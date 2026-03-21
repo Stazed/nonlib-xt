@@ -214,8 +214,6 @@ namespace MIDI
         return _size;
     }
 
-
-
     bool
     midievent::operator== ( const midievent &rhs ) const
     {

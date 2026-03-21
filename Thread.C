@@ -23,11 +23,7 @@
 #include <assert.h>
 #include <string.h>
 
-
-
 pthread_key_t Thread::_current = 0;
-
-
 
 Thread::Thread ( )
 {

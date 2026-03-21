@@ -172,8 +172,6 @@ void *Loggable::_snapshot_callback_arg = NULL;
 dirty_func *Loggable::_dirty_callback = NULL;
 void *Loggable::_dirty_callback_arg = NULL;
 
-
-
 static Mutex _lock;
 
 Loggable::~Loggable ( )
@@ -181,8 +179,6 @@ Loggable::~Loggable ( )
     Locker lock( _lock );;
     _loggables[ _id ].loggable = NULL;
 }
-
-
 
 void
 Loggable::block_start ( void )

@@ -178,8 +178,6 @@ namespace MIDI
         --_size;
     }
 
-
-
     void
     event_list::clear ( void )
     {
@@ -273,8 +271,6 @@ namespace MIDI
     {
         return _tail;
     }
-
-
 
 /*************/
 /* Selection */
@@ -522,8 +518,6 @@ namespace MIDI
             if ( e->_selected )
                 --e->_selected;
     }
-
-
 
 /** verify that all note ons are linked to note offs */
     bool

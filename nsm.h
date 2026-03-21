@@ -339,8 +339,6 @@ nsm_send_broadcast ( nsm_client_t *nsm, lo_message msg )
        lo_send_message_from( _NSM()->nsm_addr, _NSM()->_server, "/nsm/server/broadcast", msg );
 }
 
-
-
 NSM_EXPORT
 void
 nsm_check_wait ( nsm_client_t *nsm, int timeout )
@@ -371,8 +369,6 @@ nsm_thread_stop ( nsm_client_t *nsm )
 {
     lo_server_thread_stop( _NSM()->_st );
 }
-
-
 
 NSM_EXPORT void
 nsm_free ( nsm_client_t *nsm )
@@ -454,8 +450,6 @@ nsm_set_broadcast_callback( nsm_client_t *nsm, nsm_broadcast_callback *broadcast
     _NSM()->broadcast = broadcast_callback;
     _NSM()->broadcast_userdata = userdata;
 }
-
-
 
 /****************/
 /* OSC HANDLERS */
@@ -629,8 +623,6 @@ NSM_EXPORT int _nsm_osc_broadcast ( const char *path, const char *types, lo_arg 
 
     return nsm->broadcast( path, msg, nsm->broadcast_userdata );
 }
-
-
 
 NSM_EXPORT
 int
