@@ -230,6 +230,12 @@ Endpoint::init ( int proto, const char *port )
 
     _server = lo_server_new_with_proto( port, proto, error_handler );
 
+    if ( !_server && port )
+    {
+        WARNING( "Requested command line port already used, trying random." );
+        _server = lo_server_new_with_proto( NULL, proto, error_handler );
+    }
+
     char *url = lo_server_get_url( _server );
     _addr = lo_address_new_from_url( url );
     free( url );
